@@ -14,6 +14,7 @@
   "homepage": "https://github.com/ticelli/ticelli-wit-middleware#readme",
   "dependencies": {
     "lodash.merge": "^4.6.0",
+    "simple-arangorm": "0.0.5",
     "ticelli-bot": "github:ticelli/bot"
   },
   "devDependencies": {
