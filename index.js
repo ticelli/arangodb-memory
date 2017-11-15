@@ -9,15 +9,15 @@ module.exports = class ArangoDBMemory extends AbstractRouter {
   }
 
   async run(req, res) {
-
     if (!req.memoryContext) {
       throw new Error('Middleware cannot find any memory contexts to wire up !');
     }
     const memory = new Memory((this.config.prependContext || []).concat(req.memoryContext.path));
-    await memory.ensureMemoryBuilt();
+    await memory.prepare();
+    const memoryProxy = await memory.emerge();
 
     Object.defineProperty(req, 'memory', {
-      get: () => this.memory,
+      get: () => memoryProxy,
     });
   }
 
