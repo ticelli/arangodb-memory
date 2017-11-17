@@ -9,8 +9,7 @@ module.exports = class Memory {
   async prepare() {
     await Promise.all(this.context.map(async key => {
       try {
-        const context = new Context();
-        context.key = key;
+        const context = Context.new.withKey(key);
         return await context.create({ returnNew: false, silent: true });
       } catch (e) {
         return Promise.resolve();
@@ -44,19 +43,19 @@ module.exports = class Memory {
     }
     const sourceKey = this.context[this.context.length - 1];
     const source = Context.new.withKey(sourceKey);
-    this.memoryCells = (await Fallback.buildDeepTree(source)).map(e => e.proxy);
+    this.memoryCells = await Fallback.buildDeepTree(source);
     return new Proxy(this, {
       get: (target, name) => {
         if (target[name]) {
           return target[name];
         }
         for (const cell of target.memoryCells) {
-          if (cell[name]) {
-            return cell[name];
+          if (cell._validatedContent[name]) {
+            return cell._validatedContent[name];
           }
         }
         return undefined;
-      }
+      },
     });
   }
 
@@ -64,5 +63,9 @@ module.exports = class Memory {
     const context = Context.new.with(data).withKey(key);
     this.memoryCells.unshift(context);
     return context.save();
+  }
+
+  async forget(key) {
+    return Context.new.withKey(key).remove();
   }
 };
