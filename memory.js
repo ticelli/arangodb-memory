@@ -25,11 +25,14 @@ module.exports = class Memory {
     relations.shift();
     await Promise.all(relations.map(async ([fromKey, toKey]) => {
       try {
+        const from = Context.new.withKey(fromKey);
+        const to = Context.new.withKey(toKey);
         return await Fallback
           .new
           .single
-          .to(Context.new.withKey(toKey))
-          .from(Context.new.withKey(fromKey))
+          .withKey(`${from.key}-${to.key}`)
+          .to(to)
+          .from(from)
           .create();
       } catch (e) {
         return Promise.resolve();
@@ -37,32 +40,48 @@ module.exports = class Memory {
     }));
   }
 
-  async emerge() {
+  async emerge(originKey) {
     if (!this.context.length) {
-      return {};
+      return this;
     }
-    const sourceKey = this.context[this.context.length - 1];
-    const source = Context.new.withKey(sourceKey);
+    if (!originKey) {
+      originKey = this.context[this.context.length - 1];
+    }
+    const source = Context.new.withKey(originKey);
     this.memoryCells = await Fallback.buildDeepTree(source);
-    return new Proxy(this, {
-      get: (target, name) => {
-        if (target[name]) {
-          return target[name];
-        }
-        for (const cell of target.memoryCells) {
-          if (cell._validatedContent[name]) {
-            return cell._validatedContent[name];
-          }
-        }
-        return undefined;
-      },
-    });
+    return this;
+  }
+
+  get(key) {
+    for (const cell of this.memoryCells) {
+      if (cell._validatedContent[key]) {
+        return cell._validatedContent[key];
+      }
+    }
+    return undefined;
   }
 
   async memorize(key, data) {
     const context = Context.new.with(data).withKey(key);
     this.memoryCells.unshift(context);
     return context.save();
+  }
+
+  async memorizeContext(key, data) {
+    const cells = this.memoryCells;
+    if (!cells.length) {
+      throw new Error ('Memorize failed : no cells');
+    }
+    const context = await Context.new.replace(data).withKey(key).create();
+    const to = this.memoryCells[0];
+    await Fallback
+      .new
+      .single
+      .withKey(`${key}-${to.key}`)
+      .to(to)
+      .from(context)
+      .create();
+    return context;
   }
 
   async forget(key) {
