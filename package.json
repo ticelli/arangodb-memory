@@ -1,6 +1,6 @@
 {
   "name": "ticelli-arangodb-memory",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "main": "index.js",
   "repository": {
@@ -14,7 +14,7 @@
   "homepage": "https://github.com/ticelli/ticelli-wit-middleware#readme",
   "dependencies": {
     "lodash.merge": "^4.6.0",
-    "simple-arangorm": "github:HungryUp/simple-arangorm-js",
+    "simple-arangorm": "^0.0.7",
     "ticelli-bot": "github:ticelli/bot"
   },
   "devDependencies": {
