@@ -8,18 +8,12 @@ module.exports = class ArangoDBMemory extends AbstractRouter {
     ModelSetup(config);
   }
 
-  async run(req, res) {
-    if (!req.memoryContext) {
+  async run(train) {
+    if (!train.memoryContext) {
       throw new Error('Middleware cannot find any memory contexts to wire up !');
     }
-    const memory = new Memory((this.config.prependContext || []).concat(req.memoryContext.path));
-
-    Object.defineProperty(req, 'memory', {
-      get: () => memory,
+    train.hang({
+      memory: new Memory((this.config.prependContext || []).concat(train.memoryContext.path)),
     });
-  }
-
-  use(fn) {
-    throw new Error('You cannot use something on WitAi router, excepted to be used only as middleware')
   }
 };

@@ -7,7 +7,7 @@ module.exports = class Memory {
   }
 
   async prepare() {
-    await Promise.all(this.context.map(async key => {
+    await Promise.all(this.context.map(async (key) => {
       try {
         const context = Context.new.withKey(key);
         return await context.create({ returnNew: false, silent: true });
@@ -16,7 +16,7 @@ module.exports = class Memory {
       }
     }));
     const relations = [];
-    this.context.forEach(context => {
+    this.context.forEach((context) => {
       if (relations.length > 0) {
         relations[0].unshift(context);
       }
@@ -69,8 +69,8 @@ module.exports = class Memory {
 
   async memorizeContext(key, data) {
     const cells = this.memoryCells;
-    if (!cells.length) {
-      throw new Error ('Memorize failed : no cells');
+    if (!cells.length) {
+      throw new Error('Memorize failed : no cells');
     }
     const context = await Context.new.replace(data).withKey(key).create();
     const to = this.memoryCells[0];
@@ -84,7 +84,7 @@ module.exports = class Memory {
     return context;
   }
 
-  async forget(key) {
+  async forget(key) { // eslint-disable-line class-methods-use-this
     return Context.new.withKey(key).remove();
   }
 };
