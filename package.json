@@ -1,6 +1,6 @@
 {
   "name": "ticelli-arangodb-memory",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -8,13 +8,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ticelli/ticelli-wit-middleware.git"
+    "url": "git+https://github.com/ticelli/ticelli-arangodb-memory.git"
   },
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/ticelli/ticelli-wit-middleware/issues"
+    "url": "https://github.com/ticelli/ticelli-arangodb-memory/issues"
   },
-  "homepage": "https://github.com/ticelli/ticelli-wit-middleware#readme",
+  "homepage": "https://github.com/ticelli/ticelli-arangodb-memory#readme",
   "dependencies": {
     "lodash.merge": "^4.6.0",
     "simple-arangorm": "^0.0.7",

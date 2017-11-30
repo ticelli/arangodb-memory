@@ -1,4 +1,4 @@
-const AbstractRouter = require('ticelli-bot/router');
+const AbstractRouter = require('ticelli-bot');
 const Memory = require('./memory.js');
 const ModelSetup = require('./model');
 
