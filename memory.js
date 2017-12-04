@@ -2,6 +2,7 @@ const set = require('lodash.set');
 const get = require('lodash.get');
 const AbstractCollection = require('simple-arangorm/model/document');
 const Fork = require('./model/edge/fork.js');
+const State = require('./model/collection/state.js');
 
 const cachedSymbol = Symbol('cached');
 const contextSymbol = Symbol('context');
@@ -80,5 +81,29 @@ module.exports = class Memory {
       }
     }
     return undefined;
+  }
+
+  async fork(...params) {
+    let [value, key, namespace] = params.reverse(); // eslint-disable-line prefer-const
+    let target;
+    if (!namespace) {
+      target = State.new;
+    } else {
+      if (typeof namespace === 'object') {
+        target = namespace;
+      } else if (AbstractCollection.registry.has(namespace)) {
+        target = AbstractCollection.registry.get(namespace);
+      }
+    }
+    if (!target) {
+      throw new Error('Namespace not found');
+    }
+    if (key) {
+      value = set({}, key, value);
+    }
+    target = target.with(value);
+    await target.create();
+    await Fork.new.from(this[contextSymbol].slice(-1).pop()).to(target).create();
+    return this;
   }
 };
