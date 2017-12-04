@@ -67,7 +67,7 @@ module.exports = class Memory {
       return MERGE(v, MERGE(
         FOR forked, edge 
           IN 0..5 OUTBOUND v ${Fork.collectionName}
-          FILTER edge.createAt > "${(new Date(Date.now() - 1000 * 3600 * 4)).toISOString()}"
+          FILTER edge.createdAt > "${(new Date(Date.now() - 1000 * 3600 * 4)).toISOString()}"
         return forked
       ))
       `);
