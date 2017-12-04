@@ -36,7 +36,10 @@ module.exports = class Memory {
     if (!target) {
       throw new Error('Namespace not found');
     }
-    target = target.with(set({}, key, value));
+    if (key) {
+      value = set({}, key, value);
+    }
+    target = target.with(value);
     try {
       await target.create();
     } catch (e) {

@@ -12,4 +12,13 @@ module.exports = class ArangoDBMemory extends AbstractRouter {
     train.hang({ memory: new Memory() });
     super.run(train);
   }
+
+  lookup(...classToPush) {
+    this.push((train) => {
+      if (train.memory) {
+        train.memory.lookup(...classToPush.map(c => c.lookup(train)));
+      }
+    });
+    return this;
+  }
 };
