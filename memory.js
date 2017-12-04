@@ -2,6 +2,7 @@ const set = require('lodash.set');
 const get = require('lodash.get');
 const AbstractCollection = require('simple-arangorm/model/document');
 const Fork = require('./model/edge/fork.js');
+
 const cachedSymbol = Symbol('cached');
 const contextSymbol = Symbol('context');
 
@@ -23,7 +24,7 @@ module.exports = class Memory {
       target = this[contextSymbol].slice(-1).pop();
     } else {
       if (typeof namespace === 'object') {
-        namespace = namespace.collectionName;
+        target = namespace;
       }
       for (const c of this[contextSymbol].reverse()) {
         if (c.collectionName === namespace) {
