@@ -1,11 +1,14 @@
 const Abstract = require('simple-arangorm/model/abstract');
-const Context = require('./collection/context.js');
-const Fallback = require('./edge/fallback.js');
+const State = require('./collection/state.js');
+const Fork = require('./edge/fork.js');
 
+const list = [State, Fork];
+
+list.forEach(i => Abstract.register(i));
 module.exports = async ({ arangodb }) => {
   Abstract.configure(arangodb);
   await Promise.all([
-    Context.setup(),
-    Fallback.setup(),
+    State.setup(),
+    Fork.setup(),
   ]);
 };

@@ -9,11 +9,7 @@ module.exports = class ArangoDBMemory extends AbstractRouter {
   }
 
   async run(train) {
-    if (!train.memoryContext) {
-      throw new Error('Middleware cannot find any memory contexts to wire up !');
-    }
-    train.hang({
-      memory: new Memory((this.config.prependContext || []).concat(train.memoryContext.path)),
-    });
+    train.hang({ memory: new Memory() });
+    super.run(train);
   }
 };

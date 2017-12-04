@@ -1,90 +1,80 @@
-const Context = require('./model/collection/context.js');
-const Fallback = require('./model/edge/fallback.js');
+const set = require('lodash.set');
+const get = require('lodash.get');
+const AbstractCollection = require('simple-arangorm/model/document');
+const Fork = require('./model/edge/fork.js');
+const cachedSymbol = Symbol('cached');
+const contextSymbol = Symbol('context');
 
 module.exports = class Memory {
-  constructor(context) {
-    this.context = context;
+  constructor() {
+    this[contextSymbol] = [];
   }
 
-  async prepare() {
-    await Promise.all(this.context.map(async (key) => {
-      try {
-        const context = Context.new.withKey(key);
-        return await context.create({ returnNew: false, silent: true });
-      } catch (e) {
-        return Promise.resolve();
-      }
-    }));
-    const relations = [];
-    this.context.forEach((context) => {
-      if (relations.length > 0) {
-        relations[0].unshift(context);
-      }
-      relations.unshift([context]);
-    });
-    relations.shift();
-    await Promise.all(relations.map(async ([fromKey, toKey]) => {
-      try {
-        const from = Context.new.withKey(fromKey);
-        const to = Context.new.withKey(toKey);
-        return await Fallback
-          .new
-          .single
-          .withKey(`${from.key}-${to.key}`)
-          .to(to)
-          .from(from)
-          .create();
-      } catch (e) {
-        return Promise.resolve();
-      }
-    }));
-  }
-
-  async emerge(originKey) {
-    if (!this.context.length) {
-      return this;
-    }
-    if (!originKey) {
-      originKey = this.context[this.context.length - 1];
-    }
-    const source = Context.new.withKey(originKey);
-    this.memoryCells = await Fallback.buildDeepTree(source);
+  async lookup(...objects) {
+    this[contextSymbol].push(...objects);
+    this[cachedSymbol] = null;
     return this;
   }
 
-  get(key) {
-    for (const cell of this.memoryCells) {
-      if (cell._validatedContent[key]) {
-        return cell._validatedContent[key];
+  async set(...params) {
+    let [value, key, namespace] = params.reverse(); // eslint-disable-line prefer-const
+    let target;
+    if (!namespace) {
+      target = this[contextSymbol].slice(-1).pop();
+    } else {
+      if (typeof namespace === 'object') {
+        namespace = namespace.collectionName;
+      }
+      for (const c of this[contextSymbol].reverse()) {
+        if (c.collectionName === namespace) {
+          target = c;
+          break;
+        }
+      }
+    }
+    if (!target) {
+      throw new Error('Namespace not found');
+    }
+    target = target.with(set({}, key, value));
+    try {
+      await target.create();
+    } catch (e) {
+      await target.save();
+    }
+    return this;
+  }
+
+  async get(...params) {
+    let [key, namespace] = params.reverse(); // eslint-disable-line prefer-const
+    if (namespace) {
+      if (typeof namespace === 'object') {
+        namespace = namespace.collectionName;
+      } else if (AbstractCollection.registry.has(namespace)) {
+        namespace = AbstractCollection.registry.get(namespace).collectionName;
+      }
+    }
+
+    if (!this[cachedSymbol]) {
+      // @todo make this template safe, with aql or qb ; Security concerns
+      const results = await AbstractCollection.query(`
+      FOR v in [${this[contextSymbol].map(c => `DOCUMENT("${c.id}")`).join(', ')}]
+        FILTER NOT_NULL(v)
+      return MERGE(v, MERGE(
+        FOR forked, edge 
+          IN 0..5 OUTBOUND v ${Fork.collectionName}
+          FILTER edge.createAt > "${(new Date(Date.now() - 1000 * 3600 * 4)).toISOString()}"
+        return forked
+      ))
+      `);
+      this[cachedSymbol] = await results.all();
+    }
+
+    for (const row of this[cachedSymbol]) {
+      const data = get(row, key);
+      if (data && (!namespace || row._id.startsWith(`${namespace}/`))) {
+        return data;
       }
     }
     return undefined;
-  }
-
-  async memorize(key, data) {
-    const context = Context.new.with(data).withKey(key);
-    this.memoryCells.unshift(context);
-    return context.save();
-  }
-
-  async memorizeContext(key, data) {
-    const cells = this.memoryCells;
-    if (!cells.length) {
-      throw new Error('Memorize failed : no cells');
-    }
-    const context = await Context.new.replace(data).withKey(key).create();
-    const to = this.memoryCells[0];
-    await Fallback
-      .new
-      .single
-      .withKey(`${key}-${to.key}`)
-      .to(to)
-      .from(context)
-      .create();
-    return context;
-  }
-
-  async forget(key) { // eslint-disable-line class-methods-use-this
-    return Context.new.withKey(key).remove();
   }
 };
