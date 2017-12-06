@@ -46,7 +46,7 @@ module.exports = class Memory {
     } catch (e) {
       await target.save();
     }
-    return this;
+    return target;
   }
 
   async get(...params) {
@@ -104,6 +104,6 @@ module.exports = class Memory {
     target = target.with(value);
     await target.create();
     await Fork.new.from(this[contextSymbol].slice(-1).pop()).to(target).create();
-    return this;
+    return target;
   }
 };
