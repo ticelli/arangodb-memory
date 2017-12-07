@@ -1,5 +1,6 @@
 const set = require('lodash.set');
 const get = require('lodash.get');
+const { aql } = require('arangojs');
 const AbstractCollection = require('simple-arangorm/model/document');
 const Fork = require('./model/edge/fork.js');
 const State = require('./model/collection/state.js');
@@ -105,5 +106,35 @@ module.exports = class Memory {
     await target.create();
     await Fork.new.from(this[contextSymbol].slice(-1).pop()).to(target).create();
     return target;
+  }
+
+  async clear() {
+    const target = this[contextSymbol].slice(-1).pop();
+    if (!target) {
+      throw new Error('No target found');
+    }
+    const Target = target.constructor;
+    const query = await AbstractCollection.query(aql`
+      FOR a IN UNIQUE(FLATTEN(FOR forked, edge 
+      IN 0..5 OUTBOUND ${target.id} fork
+      COLLECT ids = [forked._id, edge._id]
+  return ids))
+      FILTER NOT_NULL(a)
+      return a
+      `);
+    const results = await query.all();
+    return Promise.all(
+      results.map(id => {
+        const [collectionName, key] = id.split('/', 2);
+        switch (collectionName) {
+          case Fork.collectionName:
+            return Fork.new.withKey(key).remove();
+          case State.collectionName:
+            return State.new.withKey(key).remove();
+          case Target.collectionName:
+            return Target.new.withKey(key).remove();
+        }
+      }).filter(i => !!i)
+    );
   }
 };
